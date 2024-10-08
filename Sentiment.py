@@ -1,54 +1,102 @@
 import streamlit as st
-from textblob import TextBlob
 import pandas as pd
+from transformers import pipeline
+import requests
 
+# Load the local sentiment analysis pipeline
+pipe = pipeline("text-classification", model="cardiffnlp/twitter-roberta-base-sentiment-latest")
+
+# Hugging Face API configuration
+API_URL = "https://api-inference.huggingface.co/models/openai-community/gpt2"
+headers = {"Authorization": "Bearer hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}  # Replace with your actual token
+
+# Function to query the Hugging Face API
+def query_huggingface_api(text):
+    response = requests.post(API_URL, headers=headers, json={"inputs": text})
+    return response.json()
+
+# Define a function to analyze sentiment locally with the pipeline
 def analyze_sentiment(text):
-    blob = TextBlob(text)
-    sentiment = blob.sentiment.polarity
-    score = abs(sentiment)
-    if sentiment > 0:
-        return "Positive", score
-    elif sentiment < 0:
-        return "Negative", score
+    result = pipe(text)
+    sentiment = result[0]['label']
+
+    # Map the sentiment to an emoji
+    if sentiment == "POSITIVE":
+        emoji = "😊"
+    elif sentiment == "NEGATIVE":
+        emoji = "😢"
+    elif sentiment == "NEUTRAL":
+        emoji = "😐"
     else:
-        return "Neutral", score
+        emoji = "🤔"  # Fallback for any other cases
 
-st.title("Sentiment Analysis")
-st.write("---")
+    return f"{sentiment.capitalize()} {emoji}"
 
-user_text = st.text_input("Enter text for sentiment analysis:")
+# Streamlit UI elements
+st.title("Sentiment Analysis using Hugging Face")
 
-uploaded_file = st.file_uploader("Upload a CSV file for analysis:")
+st.write("""
+Upload a CSV file with a 'Text' column or input your own text to perform sentiment analysis.
+You can choose to analyze sentiment locally using a pre-trained model or via the Hugging Face API.
+""")
 
-if st.button("Analyze"):
-    results = {"Text": [], "Sentiment": [], "Score": []}
-    
-    # Analyze user text
-    if user_text:
-        sentiment, score = analyze_sentiment(user_text)
-        results["Text"].append(user_text)
-        results["Sentiment"].append(sentiment)
-        results["Score"].append(score)
-    
-    # Analyze CSV file
-    if uploaded_file is not None:
-        try:
-            df = pd.read_csv(uploaded_file)
-            if df.shape[1] != 1:
-                st.error("CSV file must contain only one column.")
+# User text input for single sentiment analysis
+st.header("Analyze Sentiment of a Single Text")
+user_input = st.text_input("Enter text for sentiment analysis")
+
+# Selection between local model and Hugging Face API
+analysis_method = st.radio(
+    "Choose sentiment analysis method:",
+    ('Local Model', 'Hugging Face API')
+)
+
+# Add analyze button for single text input
+if st.button("Analyze Text"):
+    if user_input:
+        if analysis_method == 'Local Model':
+            sentiment_result = analyze_sentiment(user_input)
+        else:
+            api_response = query_huggingface_api(user_input)
+            sentiment_result = api_response[0]['generated_text'] if 'generated_text' in api_response[0] else "No sentiment returned"
+        st.write(f"Sentiment: {sentiment_result}")
+    else:
+        st.warning("Please enter some text to analyze.")
+
+# File upload for batch sentiment analysis
+st.header("Batch Sentiment Analysis via CSV")
+uploaded_file = st.file_uploader("Upload a CSV file", type="csv")
+
+# Add analyze button for CSV file
+if uploaded_file:
+    # Read the uploaded CSV file
+    df = pd.read_csv(uploaded_file)
+
+    # Check if the 'Text' column exists
+    if 'Text' in df.columns:
+        st.write("Data Preview:")
+        st.write(df.head())
+
+        if st.button("Analyze CSV"):
+            # Apply sentiment analysis to each row in the DataFrame
+            st.write("Performing sentiment analysis...")
+            if analysis_method == 'Local Model':
+                df['Sentiment'] = df['Text'].apply(analyze_sentiment)
             else:
-                text_column = df.columns[0]
-                for text in df[text_column]:
-                    sentiment, score = analyze_sentiment(text)
-                    results["Text"].append(text)
-                    results["Sentiment"].append(sentiment)
-                    results["Score"].append(score)
-        except Exception as e:
-            st.error(f"Error processing file: {e}")
-    
-    # Display the results
-    if results["Text"]:
-        results_df = pd.DataFrame(results)
-        st.write(results_df)
+                df['Sentiment'] = df['Text'].apply(lambda x: query_huggingface_api(x)[0]['generated_text'] if 'generated_text' in query_huggingface_api(x)[0] else "No sentiment returned")
+
+            # Show the result in Streamlit
+            st.write("Sentiment analysis results:")
+            st.write(df.head())
+
+            # Provide a download button for the updated CSV
+            csv = df.to_csv(index=False)
+            st.download_button(
+                label="Download results as CSV",
+                data=csv,
+                file_name='sentiment_analysis_results_with_emoji.csv',
+                mime='text/csv',
+            )
     else:
-        st.write("No text provided for analysis.")
+        st.error("The uploaded CSV does not contain a 'Text' column.")
+else:
+    st.write("Please upload a CSV file to perform batch sentiment analysis.")

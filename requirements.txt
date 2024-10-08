@@ -1,7 +1,5 @@
-streamlit
-pandas
 transformers
 torch
-sentencepiece
-scikit-learn
-requests
+
+protobuf==3.20.1
+altair<5

@@ -1,17 +1,54 @@
 import streamlit as st
-from transformers import pipeline
-import gc
+from textblob import TextBlob
+import pandas as pd
 
-st.header("Sentiment Analysis")
-st.subheader("Enter your sentence below")
+def analyze_sentiment(text):
+    blob = TextBlob(text)
+    sentiment = blob.sentiment.polarity
+    score = abs(sentiment)
+    if sentiment > 0:
+        return "Positive", score
+    elif sentiment < 0:
+        return "Negative", score
+    else:
+        return "Neutral", score
 
-classifier = pipeline("zero-shot-classification", model='facebook/bart-large-mnli')
+st.title("Sentiment Analysis")
+st.write("---")
 
-text = st.text_area('Enter text here!')
-candidate_labels = ['Positive', 'Neutral', 'Negative']
+user_text = st.text_input("Enter text for sentiment analysis:")
 
-if text:
-  out = classifier(text, candidate_labels)
-  st.json(out)
-  del out
-  gc.collect()
+uploaded_file = st.file_uploader("Upload a CSV file for analysis:")
+
+if st.button("Analyze"):
+    results = {"Text": [], "Sentiment": [], "Score": []}
+
+    # Analyze user text
+    if user_text:
+        sentiment, score = analyze_sentiment(user_text)
+        results["Text"].append(user_text)
+        results["Sentiment"].append(sentiment)
+        results["Score"].append(score)
+
+    # Analyze CSV file
+    if uploaded_file is not None:
+        try:
+            df = pd.read_csv(uploaded_file)
+            if df.shape[1] != 1:
+                st.error("CSV file must contain only one column.")
+            else:
+                text_column = df.columns[0]
+                for text in df[text_column]:
+                    sentiment, score = analyze_sentiment(text)
+                    results["Text"].append(text)
+                    results["Sentiment"].append(sentiment)
+                    results["Score"].append(score)
+        except Exception as e:
+            st.error(f"Error processing file: {e}")
+
+    # Display the results
+    if results["Text"]:
+        results_df = pd.DataFrame(results)
+        st.write(results_df)
+    else:
+        st.write("No text provided for analysis.")

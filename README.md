@@ -1,4 +1,5 @@
 # Gallabox-Internship
+I had worked as an intern in gallabox on the project Sentiment analysis for whatsApp coversations in the comapany.
 ## About the company
 ![image](https://github.com/user-attachments/assets/504e502b-ba08-49d2-9aee-1720a85c8c18)
 

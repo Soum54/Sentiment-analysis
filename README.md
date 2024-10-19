@@ -1,6 +1,7 @@
 # Gallabox-Internship
 ## About the company
 ![image](https://github.com/user-attachments/assets/504e502b-ba08-49d2-9aee-1720a85c8c18)
+
 Gallabox is a collaborative conversational platform designed to enhance customer engagement and communication for businesses. It primarily focuses on simplifying customer interactions through WhatsApp and other messaging platforms. Gallabox allows businesses to build, automate, and manage customer conversations with ease by integrating various tools such as chatbots, customer support systems, and marketing automation.
 # Sentiment analysis for given text
 Sentiment analysis is a technique used to assess the emotional tone of a given text, categorizing it as positive, negative, or neutral. It can also provide a sentiment score for each statement. Additionally, you can upload a CSV file containing multiple text entries to obtain sentiment evaluations for each line in the file.

@@ -1,54 +1,63 @@
 import streamlit as st
-from textblob import TextBlob
 import pandas as pd
+from transformers import pipeline
 
+# Load the sentiment analysis pipeline
+pipe = pipeline("text-classification", model="cardiffnlp/twitter-roberta-base-sentiment-latest")
+
+# Function to analyze sentiment and return sentiment & score
 def analyze_sentiment(text):
-    blob = TextBlob(text)
-    sentiment = blob.sentiment.polarity
-    score = abs(sentiment)
-    if sentiment > 0:
-        return "Positive", score
-    elif sentiment < 0:
-        return "Negative", score
-    else:
-        return "Neutral", score
+    result = pipe(text)[0]
+    return result['label'].upper(), result['score']  # Convert label to uppercase for consistency
 
-st.title("Sentiment Analysis")
+# Function for emoji based on sentiment
+def get_emoji(sentiment):
+    if "POSITIVE" in sentiment:
+        return "😊"
+    elif "NEGATIVE" in sentiment:
+        return "😢"
+    elif "NEUTRAL" in sentiment:
+        return "😐"
+    else:
+        return "🤔"
+
+# Streamlit app title
+st.title("Sentiment Analysis with WhatsApp Conversations")
 st.write("---")
 
+# Input section (text and CSV)
 user_text = st.text_input("Enter text for sentiment analysis:")
 
-uploaded_file = st.file_uploader("Upload a CSV file for analysis:")
-
-if st.button("Analyze"):
-    results = {"Text": [], "Sentiment": [], "Score": []}
-
-    # Analyze user text
+# Text button placed directly after input box
+if st.button("Analyze Text"):
     if user_text:
         sentiment, score = analyze_sentiment(user_text)
-        results["Text"].append(user_text)
-        results["Sentiment"].append(sentiment)
-        results["Score"].append(score)
+        emoji = get_emoji(sentiment)
 
-    # Analyze CSV file
-    if uploaded_file is not None:
-        try:
-            df = pd.read_csv(uploaded_file)
-            if df.shape[1] != 1:
-                st.error("CSV file must contain only one column.")
-            else:
-                text_column = df.columns[0]
-                for text in df[text_column]:
-                    sentiment, score = analyze_sentiment(text)
-                    results["Text"].append(text)
-                    results["Sentiment"].append(sentiment)
-                    results["Score"].append(score)
-        except Exception as e:
-            st.error(f"Error processing file: {e}")
+        # Display sentiment result with emoji
+        st.write(f"Sentiment (Text Input): **{sentiment.upper()}** {emoji}")
+        st.write(f"Confidence Score: **{score:.2f}**")
 
-    # Display the results
-    if results["Text"]:
-        results_df = pd.DataFrame(results)
-        st.write(results_df)
-    else:
-        st.write("No text provided for analysis.")
+# CSV file uploader and button
+uploaded_file = st.file_uploader("CSV file analysis (Column name must be 'whatsapp.text.body'):")
+
+# CSV button placed directly after file uploader
+if st.button("Analyze CSV") and uploaded_file is not None:
+    try:
+        df = pd.read_csv(uploaded_file)
+        if 'whatsapp.text.body' not in df.columns:
+            raise ValueError("CSV file must contain a column named 'whatsapp.text.body'")
+
+        # Drop rows with NaN values
+        df.dropna(subset=['whatsapp.text.body'], inplace=True)
+        df.reset_index(drop=True, inplace=True)
+
+        # Apply sentiment analysis to the CSV column
+        df['sentiment'], df['score'] = zip(*df['whatsapp.text.body'].apply(analyze_sentiment))
+        df['emoji'] = df['sentiment'].apply(get_emoji)
+
+        st.write("Sentiment Analysis Results (from uploaded CSV):")
+        st.dataframe(df[['whatsapp.text.body', 'sentiment', 'score', 'emoji']])
+
+    except ValueError as e:
+        st.error(e)

@@ -4,6 +4,7 @@ I had worked as an intern in gallabox on the project Sentiment analysis for what
 ![image](https://github.com/user-attachments/assets/504e502b-ba08-49d2-9aee-1720a85c8c18)
 
 - Gallabox is a collaborative conversational platform designed to enhance customer engagement and communication for businesses. It primarily focuses on simplifying customer interactions through WhatsApp and other messaging platforms. Gallabox allows businesses to build, automate, and manage customer conversations with ease by integrating various tools such as chatbots, customer support systems, and marketing automation.
+  
 | Internship | Details |
 | --- | --- |
 |Internship name| Artificial Intelligence Internship|

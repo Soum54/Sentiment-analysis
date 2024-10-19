@@ -1,2 +1,6 @@
 streamlit
-textblob
+pandas
+transformers
+torch
+sentencepiece
+scikit-learn

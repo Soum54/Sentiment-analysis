@@ -27,4 +27,4 @@ Sentiment analysis is a technique used to assess the emotional tone of a given t
 # Output
 ![image](https://github.com/user-attachments/assets/319ca31e-01d8-4922-a360-4574ca304017)
 # Hosted website link
-https://sentiment-analysisdl.streamlit.app/
+https://sentiment-analysis-for-whatsapp-conversations.streamlit.app/
